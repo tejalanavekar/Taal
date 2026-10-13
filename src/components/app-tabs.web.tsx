@@ -1,115 +1,141 @@
-import {
-  Tabs,
-  TabList,
-  TabTrigger,
-  TabSlot,
-  TabTriggerSlotProps,
-  TabListProps,
-} from 'expo-router/ui';
-import { SymbolView } from 'expo-symbols';
-import { Pressable, useColorScheme, View, StyleSheet } from 'react-native';
+import { Children } from 'react';
+import { Tabs, TabList, TabTrigger, TabSlot, TabTriggerSlotProps, TabListProps } from 'expo-router/ui';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { ExternalLink } from './external-link';
+import { Avatar } from './avatar';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
-import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function AppTabs() {
   return (
     <Tabs>
-      <TabSlot style={{ height: '100%' }} />
       <TabList asChild>
-        <CustomTabList>
-          <TabTrigger name="home" href="/" asChild>
-            <TabButton>Home</TabButton>
+        <NavBar>
+          <TabTrigger name="explore" href="/" asChild>
+            <NavLink label="Explore" />
           </TabTrigger>
-          <TabTrigger name="explore" href="/explore" asChild>
-            <TabButton>Explore</TabButton>
+          <TabTrigger name="ai-fit" href="/ai-fit" asChild>
+            <AiDiscoverButton />
           </TabTrigger>
-        </CustomTabList>
+          <TabTrigger name="profile" href="/profile" asChild>
+            <AvatarButton />
+          </TabTrigger>
+        </NavBar>
       </TabList>
+      <TabSlot style={{ flex: 1 }} />
     </Tabs>
   );
 }
 
-export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
-  return (
-    <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
-      <ThemedView
-        type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
-        style={styles.tabButtonView}>
-        <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
-          {children}
-        </ThemedText>
-      </ThemedView>
-    </Pressable>
-  );
-}
-
-export function CustomTabList(props: TabListProps) {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+// `TabList` only accepts `TabTrigger` elements as children (it statically
+// scans them to register the app's screens). We still want each trigger's
+// button rendered in a different part of the navbar, so we pull them out
+// of `props.children` by position and place each where it visually belongs,
+// rather than rendering `props.children` as one block.
+function NavBar(props: TabListProps) {
+  const [exploreTrigger, aiFitTrigger, profileTrigger] = Children.toArray(props.children);
 
   return (
-    <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={styles.innerContainer}>
-        <ThemedText type="smallBold" style={styles.brandText}>
-          Expo Starter
+    <View style={styles.navBar}>
+      <ThemedView type="backgroundElement" style={styles.navInner}>
+        <ThemedText type="subtitle" themeColor="primary" style={styles.logo}>
+          Taal
         </ThemedText>
 
-        {props.children}
+        <View style={styles.navLinks}>
+          {exploreTrigger}
+          {/* Live Now and For Instructors aren't built yet — static placeholders until those screens exist. */}
+          <ThemedText type="smallBold" themeColor="textSecondary">
+            Live Now
+          </ThemedText>
+          <ThemedText type="smallBold" themeColor="textSecondary">
+            For Instructors
+          </ThemedText>
+        </View>
 
-        <ExternalLink href="https://docs.expo.dev" asChild>
-          <Pressable style={styles.externalPressable}>
-            <ThemedText type="link">Docs</ThemedText>
-            <SymbolView
-              tintColor={colors.text}
-              name={{ ios: 'arrow.up.right.square', web: 'link' }}
-              size={12}
-            />
-          </Pressable>
-        </ExternalLink>
+        <View style={styles.navActions}>
+          {aiFitTrigger}
+          {profileTrigger}
+        </View>
       </ThemedView>
     </View>
   );
 }
 
+function NavLink({ label, isFocused, ...props }: TabTriggerSlotProps & { label: string }) {
+  const theme = useTheme();
+  const color = isFocused ? theme.primary : theme.text;
+
+  return (
+    <Pressable {...props}>
+      <ThemedText type="smallBold" style={{ color }}>
+        {label}
+      </ThemedText>
+    </Pressable>
+  );
+}
+
+function AiDiscoverButton(props: TabTriggerSlotProps) {
+  return (
+    <Pressable {...props} style={styles.aiButton}>
+      <ThemedText type="smallBold" style={styles.aiButtonLabel}>
+        ✨ AI Discover
+      </ThemedText>
+    </Pressable>
+  );
+}
+
+function AvatarButton(props: TabTriggerSlotProps) {
+  return (
+    <Pressable {...props}>
+      <Avatar initials="A" color="#D95A4A" size={36} />
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  tabListContainer: {
-    position: 'absolute',
+  navBar: {
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#FFBDB8',
+  },
+  navInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.four,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.three,
     width: '100%',
-    padding: Spacing.three,
-    justifyContent: 'center',
-    alignItems: 'center',
+    maxWidth: MaxContentWidth * 2,
+  },
+  logo: {
+    fontSize: 24,
+    lineHeight: 28,
+    flexShrink: 0,
+  },
+  navLinks: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.four,
+    flex: 1,
+    minWidth: 0,
   },
-  innerContainer: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.five,
-    borderRadius: Spacing.five,
+  navActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexGrow: 1,
-    gap: Spacing.two,
-    maxWidth: MaxContentWidth,
+    gap: Spacing.three,
+    flexShrink: 0,
   },
-  brandText: {
-    marginRight: 'auto',
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  tabButtonView: {
-    paddingVertical: Spacing.one,
+  aiButton: {
+    backgroundColor: '#D95A4A',
     paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: Spacing.four,
   },
-  externalPressable: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: Spacing.one,
-    marginLeft: Spacing.three,
+  aiButtonLabel: {
+    color: '#FFFFFF',
   },
 });
